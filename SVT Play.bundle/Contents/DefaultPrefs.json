@@ -1,0 +1,8 @@
+[
+    {
+        "id":"paginate_depth",
+        "type":"text",
+        "label":"Max sökdjup",
+        "default":"5"
+    }
+]

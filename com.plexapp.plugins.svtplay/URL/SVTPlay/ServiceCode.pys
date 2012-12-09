@@ -1,0 +1,111 @@
+BASE_URL = "http://www.svtplay.se"
+SWF_TAG = "PLAYER_SWF="
+SWF_PLAYER = BASE_URL + "/public/swf/video/svtplayer-2012.11.swf"
+QUAL_HD = 2400
+QUAL_HIGH = 1400
+QUAL_MED = 850
+QUAL_LOW_H = 340
+QUAL_LOW = 320
+BITRATES = [QUAL_HD, QUAL_HIGH, QUAL_MED, QUAL_LOW_H, QUAL_LOW]
+####################################################################################################
+
+def MetadataObjectForURL(url):
+
+    try:
+        page = HTML.ElementFromURL(url, cacheTime = 0)
+    except:
+        raise Ex.MediaNotAvailable
+
+    show = page.xpath("//div[@class='playVideoBox']/h1/text()")[0]
+    title = page.xpath("//div[@class='playVideoInfo']//h1/text()")[0]
+    description = page.xpath("//div[@class='playVideoInfo']//p/text()")[0]
+
+    air_date = ""
+    try:
+        air_date = page.xpath("//div[@class='playVideoInfo']//time")[0].get("datetime")
+        air_date = air_date.split('+')[0] #cut off timezone info as python can't parse this
+        air_date = Datetime.ParseDate(air_date)
+    except:
+        Log.Exception("Error converting airdate: " + air_date)
+        air_date = Datetime.Now()
+
+    try:
+        duration = page.xpath("//div[@class='playVideoInfo']//span//strong/../text()")[3].split()[0]
+        duration = int(duration) * 60 * 1000 #millisecs
+    except:
+        duration = None
+
+    thumb =  page.xpath("//div[@class='playVideoBox']//a[@id='player']//img/@src")[0]
+
+    return EpisodeObject(
+            show = show,
+            title = title,
+            summary = description,
+            duration = duration,
+            thumb = thumb,
+            art = thumb,
+            originally_available_at = air_date)
+
+####################################################################################################
+def GetLiveStreamUrl(url):
+    JSON_ARG = "?output=json"
+    page = HTML.ElementFromURL(url)
+    jsonurl = page.xpath("//a[@id='player']//@data-json-href")[0]
+    videos = JSON.ObjectFromURL(BASE_URL + jsonurl + JSON_ARG)
+    try:
+    	retUrl = videos['video']['videoReferences'][1]['url']
+    except:
+	retUrl = ""
+
+    return  retUrl
+
+####################################################################################################
+def MediaObjectsForURL(url):
+    mediaObjs = []
+    playUrl = GetLiveStreamUrl(url)
+    return [
+        MediaObject(
+            video_resolution = "1280",
+            audio_channels = 2,
+            bitrate = QUAL_HD,
+            parts = [PartObject(key=HTTPLiveStreamURL(playUrl))]),
+        MediaObject(
+            video_resolution = "1024",
+            audio_channels = 2,
+            bitrate = QUAL_HIGH,
+            parts = [PartObject(key=HTTPLiveStreamURL(playUrl))]),
+        MediaObject(
+            video_resolution = "640",
+            audio_channels = 2,
+            bitrate = QUAL_MED,
+            parts = [PartObject(key=HTTPLiveStreamURL(playUrl))]),
+        MediaObject(
+            video_resolution = "480",
+            audio_channels = 2,
+            bitrate = QUAL_LOW,
+            parts = [PartObject(key=HTTPLiveStreamURL(playUrl))]),
+        ]
+
+####################################################################################################
+#@indirect
+def PlayVideo(url, bitrate):
+    return ""
+####################################################################################################
+def NormalizeURL(url):
+    return url
+####################################################################################################
+def extractContentURLS(json):
+    d = dict()
+    for bitrate in BITRATES:
+        for v in json["video"]["videoReferences"]:
+            if(int(v["bitrate"]) == int(bitrate)): 
+                if(v["url"].find("rtmp") > -1):
+                    d[bitrate] = v["url"]
+                    break;
+    return d
+ 
+def getContentBitrateURLs(d, bitrate):
+    return ""
+
+def getPlayerUrl(url):
+    return ""
