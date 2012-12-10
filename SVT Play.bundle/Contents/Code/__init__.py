@@ -38,6 +38,7 @@ def GetIndexShows(prevTitle):
     showsList = ObjectContainer(title1 = prevTitle, title2=TEXT_INDEX_SHOWS)
     pageElement = HTML.ElementFromURL(URL_INDEX)
     programLinks = pageElement.xpath("//a[@class='playAlphabeticLetterLink']")
+    Log("This is the programLinks: %s" % programLinks)
     for s in CreateShowList(programLinks, TEXT_INDEX_SHOWS):
         showsList.add(s)
 
@@ -98,7 +99,10 @@ def GetShowEpisodes(prevTitle = None, showUrl = None, showName = ""):
     for epUrl in epUrls:
         epObj = GetEpisodeObject(epUrl)
         Log("epUrl " + epUrl)
-        epList.add(epObj)
+        try:
+            epList.add(epObj)
+        except:
+            Log(epObject)
 
     return epList
 
@@ -185,7 +189,7 @@ def GetEpisodeObject(url):
        page = HTML.ElementFromURL(url)
 
        show = page.xpath("//div[@class='playVideoBox']/h1/text()")[0]
-       title = page.xpath("//div[@class='playVideoInfo']//h1/text()")[0]
+       title = page.xpath("//div[@class='playVideoInfo']//h2/text()")[0]
        description = page.xpath("//div[@class='playVideoInfo']//p/text()")[0]
 
        air_date = ""
